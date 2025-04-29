@@ -1,16 +1,15 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"os"
+	u "os/user"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
- 
+
 var (
-	cfgFile string
+	cfgFile         string
 	nexusUser       string
 	nexusPassword   string
 	nexusHost       string
@@ -21,48 +20,49 @@ var rootCmd = &cobra.Command{
 	Short: "Nexus CLI",
 	Long:  "Nexus CLI tool to interact with nexus repository",
 	Run: func(cmd *cobra.Command, args []string) {
-		println("hello")
+		println(cfgFile, nexusUser, nexusPassword, nexusHost, nexusRepository)
 	},
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", ".nexuscli.json", "config file (default is $HOME/.nexuscli.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&nexusUser, "user", "u", "cicd_system", "your Nexus Repository Manager user name.")
-	rootCmd.PersistentFlags().StringVarP(&nexusPassword, "password", "p", "password", "your Nexus Repository Manager password.")
-	rootCmd.PersistentFlags().StringVarP(&nexusHost, "server", "s", "https://nexus.abbank.vn", "the address of the Nexus Repository Manager server to use.")
-	rootCmd.PersistentFlags().StringVarP(&nexusRepository, "repository", "r", "abb-registry", "the registry for Nexus Repository Manager server to use.")
+
+	home, err := u.Current()
+	cobra.CheckErr(err)
+
+	configPath := fmt.Sprintf("%s/.nexuscli.json", home.HomeDir)
+
+	nexusUser = viper.GetString("nexusUser")
+	nexusPassword = viper.GetString("nexusPassword")
+	nexusHost = viper.GetString("nexusHost")
+	nexusRepository = viper.GetString("nexusRepository")
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", configPath, "config file (default is $HOME/.nexuscli.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&nexusUser, "user", "u", nexusUser, "your Nexus Repository Manager user name.")
+	rootCmd.PersistentFlags().StringVarP(&nexusPassword, "password", "p", nexusPassword, "your Nexus Repository Manager password.")
+	rootCmd.PersistentFlags().StringVarP(&nexusHost, "server", "s", nexusHost, "the address of the Nexus Repository Manager server to use.")
+	rootCmd.PersistentFlags().StringVarP(&nexusRepository, "repository", "r", nexusRepository, "the registry for Nexus Repository Manager server to use.")
 }
 
 func initConfig() {
+	viper.SetConfigType("json")
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
-		fmt.Println(cfgFile)
 	} else {
 		// Search config in home directory with name ".nexuscli" (without extension).
-		fmt.Println("No config file found")
-		home, err := os.UserHomeDir()
+		home, err := u.Current()
 		cobra.CheckErr(err)
 
-		viper.AddConfigPath(home)
-		viper.SetConfigType("json")
-		viper.SetConfigName(".nexuscli")
+		viper.AddConfigPath(home.HomeDir)
+		viper.SetConfigFile(".nexuscli.json")
 	}
 	viper.AutomaticEnv()
 
-	err := viper.ReadInConfig()
-	notFound := &viper.ConfigFileNotFoundError{}
-
-	switch {
-	case err != nil && !errors.As(err, notFound):
-		cobra.CheckErr(err)
-	case err != nil && errors.As(err, notFound):
-		break
-
-	default:
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-
+	if err := viper.ReadInConfig(); err == nil {
+		//Used for Debug
+		//fmt.Printf(viper.GetString("user"))
 	}
+
 }
 
 func Execute() {
