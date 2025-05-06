@@ -20,7 +20,7 @@ var rootCmd = &cobra.Command{
 	Short: "Nexus CLI",
 	Long:  "Nexus CLI tool to interact with nexus repository",
 	Run: func(cmd *cobra.Command, args []string) {
-		println(cfgFile, nexusUser, nexusPassword, nexusHost, nexusRepository)
+		fmt.Println(viper.AllKeys())
 	},
 }
 
@@ -36,12 +36,8 @@ func init() {
 	nexusPassword = viper.GetString("nexusPassword")
 	nexusHost = viper.GetString("nexusHost")
 	nexusRepository = viper.GetString("nexusRepository")
-
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", configPath, "config file (default is $HOME/.nexuscli.yaml)")
-	rootCmd.PersistentFlags().StringVarP(&nexusUser, "user", "u", nexusUser, "your Nexus Repository Manager user name.")
-	rootCmd.PersistentFlags().StringVarP(&nexusPassword, "password", "p", nexusPassword, "your Nexus Repository Manager password.")
-	rootCmd.PersistentFlags().StringVarP(&nexusHost, "server", "s", nexusHost, "the address of the Nexus Repository Manager server to use.")
-	rootCmd.PersistentFlags().StringVarP(&nexusRepository, "repository", "r", nexusRepository, "the registry for Nexus Repository Manager server to use.")
+
 }
 
 func initConfig() {
@@ -60,7 +56,7 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err == nil {
 		//Used for Debug
-		//fmt.Printf(viper.GetString("user"))
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 
 }
